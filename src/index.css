@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #f2ead0;
+  /* Cozy warm beige background */
+  --color-surface: #ffffff;
+  /* White card surface */
+  --color-dark-primary: #1b1b22;
+  /* Cozy dark background */
+  --color-dark-surface: #282834;
+  /* Dark mode card surface */
+
+  --color-accent-soft: #c0d6c9;
+  /* Soft sage */
+  --color-accent-peach: #f5984f;
+  /* Soft peach */
+  --color-accent-rose: #e88d91;
+  /* Soft rose */
+  --color-accent-blue: #8fcafe;
+  /* Soft blue */
+
+  --color-text-main: #2b2d42;
+  --color-text-muted: #8d99ae;
+  --color-dark-text-main: #edf2f4;
+  --color-dark-text-muted: #8d99ae;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg-main: var(--color-primary);
+    --bg-surface: var(--color-surface);
+    --text-main: var(--color-text-main);
+    --text-muted: var(--color-text-muted);
+  }
+
+  .dark {
+    --bg-main: var(--color-dark-primary);
+    --bg-surface: var(--color-dark-surface);
+    --text-main: var(--color-dark-text-main);
+    --text-muted: var(--color-dark-text-muted);
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    margin: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Hide scrollbar for clean UI but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
