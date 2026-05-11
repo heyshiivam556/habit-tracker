@@ -5,13 +5,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 // TODO: Replace with your actual Firebase config
 // Find this in your Firebase Console -> Project Settings -> General
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyAWeQx9irdjZ8ICWtv8MTaW8Xy9wejfGgQ",
+  authDomain: "habit-tracker-53f76.firebaseapp.com",
+  projectId: "habit-tracker-53f76",
+  storageBucket: "habit-tracker-53f76.firebasestorage.app",
+  messagingSenderId: "1007113559306",
+  appId: "1:1007113559306:web:72d47eba9e564c14ddaef3",
+  measurementId: "G-RSBSJF0B38"
 };
 
 let app, db, auth, googleProvider;
