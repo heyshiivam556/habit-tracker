@@ -1,4 +1,4 @@
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Activity, User } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -7,7 +7,7 @@ export default function Navigation() {
   
   const tabs = [
     { id: '/', icon: Home, label: 'Home' },
-    { id: '/calendar', icon: Calendar, label: 'Calendar' },
+    { id: '/analytics', icon: Activity, label: 'Analytics' },
     { id: '/profile', icon: User, label: 'You' }
   ];
 

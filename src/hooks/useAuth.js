@@ -12,7 +12,7 @@ export function useAuth() {
       setLoading(false);
       return;
     }
-    
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -41,7 +41,7 @@ export function useAuth() {
       alert("Firebase is not configured. Please add your credentials to src/firebase.js");
       return;
     }
-    
+
     try {
       // Always try popup first. It works better when third-party cookies are blocked.
       const result = await signInWithPopup(auth, googleProvider);

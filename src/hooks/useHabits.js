@@ -6,10 +6,10 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'fireb
 
 // Default habits for first-time users
 const defaultHabits = [
-  { id: '1', name: 'Read 20 pages', iconName: 'BookOpen', color: 'var(--color-accent-peach)', isCompleted: false, lastCompletedDate: null, createdAt: 1 },
-  { id: '2', name: 'Drink Water', iconName: 'Droplet', color: 'var(--color-accent-blue)', isCompleted: false, lastCompletedDate: null, createdAt: 2 },
-  { id: '3', name: 'Workout', iconName: 'Dumbbell', color: 'var(--color-accent-rose)', isCompleted: false, lastCompletedDate: null, createdAt: 3 },
-  { id: '4', name: 'Morning Coffee', iconName: 'Coffee', color: 'var(--color-accent-soft)', isCompleted: false, lastCompletedDate: null, createdAt: 4 },
+  { id: '1', name: 'Read 20 pages', iconName: 'BookOpen', color: 'var(--color-accent-peach)', isCompleted: false, lastCompletedDate: null, completedDates: [], createdAt: 1 },
+  { id: '2', name: 'Drink Water', iconName: 'Droplet', color: 'var(--color-accent-blue)', isCompleted: false, lastCompletedDate: null, completedDates: [], createdAt: 2 },
+  { id: '3', name: 'Workout', iconName: 'Dumbbell', color: 'var(--color-accent-rose)', isCompleted: false, lastCompletedDate: null, completedDates: [], createdAt: 3 },
+  { id: '4', name: 'Morning Coffee', iconName: 'Coffee', color: 'var(--color-accent-soft)', isCompleted: false, lastCompletedDate: null, completedDates: [], createdAt: 4 },
 ];
 
 const iconMap = {
@@ -96,13 +96,23 @@ export function useHabits() {
     const habit = habits.find(h => h.id === id);
     const newlyCompleted = !habit.isCompleted;
 
+    let updatedCompletedDates = habit.completedDates || [];
+    if (newlyCompleted) {
+      if (!updatedCompletedDates.includes(today)) {
+        updatedCompletedDates = [...updatedCompletedDates, today];
+      }
+    } else {
+      updatedCompletedDates = updatedCompletedDates.filter(date => date !== today);
+    }
+
     // Optimistic Update
     setHabits(habits.map(h => {
       if (h.id === id) {
         return { 
           ...h, 
           isCompleted: newlyCompleted,
-          lastCompletedDate: newlyCompleted ? today : h.lastCompletedDate
+          lastCompletedDate: newlyCompleted ? today : h.lastCompletedDate,
+          completedDates: updatedCompletedDates
         };
       }
       return h;
@@ -114,7 +124,8 @@ export function useHabits() {
       try {
         await updateDoc(habitRef, {
           isCompleted: newlyCompleted,
-          lastCompletedDate: newlyCompleted ? today : habit.lastCompletedDate
+          lastCompletedDate: newlyCompleted ? today : habit.lastCompletedDate,
+          completedDates: updatedCompletedDates
         });
       } catch (error) {
         console.error("Failed to update habit in Firestore", error);
@@ -129,6 +140,7 @@ export function useHabits() {
       id: newId, 
       isCompleted: false, 
       lastCompletedDate: null,
+      completedDates: [],
       createdAt: Date.now() 
     };
 

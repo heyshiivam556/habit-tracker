@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
-import Calendar from './pages/Calendar';
+import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import ManageHabits from './pages/ManageHabits';
 
@@ -16,7 +16,7 @@ function AppLayout() {
         <header className="mb-8 pt-4">
           <h1 className="text-3xl font-bold tracking-tight">
             {path === '/' && 'Good Morning, Alex'}
-            {path === '/calendar' && 'Your Calendar'}
+            {path === '/analytics' && 'Analytics'}
             {path === '/profile' && 'You'}
             {path === '/manage-habits' && 'Manage Habits'}
           </h1>
@@ -27,7 +27,7 @@ function AppLayout() {
 
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/manage-habits" element={<ManageHabits />} />
         </Routes>
