@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useHabits } from '../hooks/useHabits';
-import { ArrowLeft, Plus, Trash2, BookOpen, Droplet, Dumbbell, Coffee, Heart, Star, Music, Zap } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, X } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const availableIcons = [
-  { name: 'BookOpen', icon: BookOpen },
-  { name: 'Droplet', icon: Droplet },
-  { name: 'Dumbbell', icon: Dumbbell },
-  { name: 'Coffee', icon: Coffee },
-  { name: 'Heart', icon: Heart },
-  { name: 'Star', icon: Star },
-  { name: 'Music', icon: Music },
-  { name: 'Zap', icon: Zap },
+const initialAvailableIcons = [
+  { name: 'BookOpen', icon: Icons.BookOpen },
+  { name: 'Droplet', icon: Icons.Droplet },
+  { name: 'Dumbbell', icon: Icons.Dumbbell },
+  { name: 'Coffee', icon: Icons.Coffee },
+  { name: 'Heart', icon: Icons.Heart },
+  { name: 'Star', icon: Icons.Star },
+  { name: 'Music', icon: Icons.Music },
+  { name: 'Zap', icon: Icons.Zap },
 ];
 
 const availableColors = [
@@ -25,6 +26,13 @@ const availableColors = [
   '#c1fba4', // pastel light green
 ];
 
+const toPascalCase = (str) => {
+  return str
+    .split(/[-_ ]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join('');
+};
+
 export default function ManageHabits() {
   const { habits, addHabit, deleteHabit } = useHabits();
   
@@ -32,6 +40,13 @@ export default function ManageHabits() {
   const [newHabitName, setNewHabitName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('Star');
   const [selectedColor, setSelectedColor] = useState(availableColors[0]);
+  const [requiresTime, setRequiresTime] = useState(false);
+
+  const [dynamicIcons, setDynamicIcons] = useState([]);
+  const [showIconModal, setShowIconModal] = useState(false);
+  const [customIconName, setCustomIconName] = useState('');
+
+  const allIcons = [...initialAvailableIcons, ...dynamicIcons];
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -40,11 +55,31 @@ export default function ManageHabits() {
     addHabit({
       name: newHabitName,
       iconName: selectedIcon,
-      color: selectedColor
+      color: selectedColor,
+      requiresTime: requiresTime
     });
     
     setNewHabitName('');
+    setRequiresTime(false);
     setIsAdding(false);
+  };
+
+  const handleAddCustomIcon = () => {
+    const trimmed = customIconName.trim();
+    if (!trimmed) return;
+    
+    const formattedName = toPascalCase(trimmed);
+
+    // basic check to see if the icon exists in lucide-react (case sensitive typically)
+    if (Icons[formattedName]) {
+      const newIcon = { name: formattedName, icon: Icons[formattedName] };
+      setDynamicIcons([...dynamicIcons, newIcon]);
+      setSelectedIcon(formattedName);
+      setShowIconModal(false);
+      setCustomIconName('');
+    } else {
+      alert(`Icon "${formattedName}" not found. Please try another name from Lucide.`);
+    }
   };
 
   return (
@@ -107,12 +142,33 @@ export default function ManageHabits() {
               className="w-full bg-[var(--bg-main)] px-5 py-4 rounded-2xl outline-none text-base border border-transparent focus:border-[var(--text-muted)]/30 transition-colors"
               autoFocus
             />
+            <div 
+              className="flex items-center justify-between mt-4 cursor-pointer p-4 bg-[var(--bg-main)] rounded-2xl hover:bg-[var(--text-muted)]/10 transition-colors border border-transparent hover:border-[var(--text-muted)]/20"
+              onClick={() => setRequiresTime(!requiresTime)}
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Enable time input</span>
+                <span className="text-xs text-[var(--text-muted)] mt-0.5">Track duration when completing</span>
+              </div>
+              <div className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors duration-300 ${requiresTime ? 'bg-[var(--text-main)]' : 'bg-[var(--text-muted)]/30'}`}>
+                <div className={`w-5 h-5 bg-[var(--bg-main)] rounded-full shadow-md transition-transform duration-300 ${requiresTime ? 'translate-x-5' : 'translate-x-0'}`}></div>
+              </div>
+            </div>
           </div>
 
           <div className="mb-6">
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-3 uppercase tracking-wider">Choose Icon</label>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Choose Icon</label>
+              <button 
+                type="button" 
+                onClick={() => setShowIconModal(true)}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors font-medium"
+              >
+                more &gt;
+              </button>
+            </div>
             <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3">
-              {availableIcons.map(iconObj => {
+              {allIcons.map(iconObj => {
                 const IconComp = iconObj.icon;
                 const isSelected = selectedIcon === iconObj.name;
                 return (
@@ -160,6 +216,38 @@ export default function ManageHabits() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Custom Icon Modal */}
+      {showIconModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] p-6 rounded-3xl w-full max-w-sm shadow-xl relative border border-[var(--text-muted)]/10">
+            <button 
+              onClick={() => setShowIconModal(false)}
+              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-lg font-bold mb-2">Add Custom Icon</h3>
+            <p className="text-sm text-[var(--text-muted)] mb-4 leading-relaxed">
+              Give the name of the icon from <a href="https://lucide.dev/icons" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">lucide icon</a> (e.g., Apple, Camera, Gamepad2).
+            </p>
+            <input 
+              type="text"
+              value={customIconName}
+              onChange={(e) => setCustomIconName(e.target.value)}
+              placeholder="Icon name..."
+              className="w-full bg-[var(--bg-main)] px-4 py-3 rounded-2xl outline-none text-base border border-transparent focus:border-[var(--text-muted)]/30 transition-colors mb-4"
+              autoFocus
+            />
+            <button 
+              onClick={handleAddCustomIcon}
+              className="w-full py-3 rounded-2xl font-semibold bg-[var(--text-main)] text-[var(--bg-main)] hover:opacity-90 transition-opacity"
+            >
+              Add Icon
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

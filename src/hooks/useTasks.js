@@ -11,7 +11,7 @@ export function useTasks() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [taskListId, setTaskListId] = useState(null);
   
-  const { googleToken } = useAuth();
+  const { googleToken, clearGoogleToken, refreshGoogleToken } = useAuth();
 
   useEffect(() => {
     if (!googleToken) {
@@ -37,8 +37,19 @@ export function useTasks() {
         
         if (listsData.error) {
           console.error("Google Tasks API Error:", listsData.error);
-          alert(`Google Tasks Error: ${listsData.error.message}\n\nMake sure the "Google Tasks API" is enabled in your Google Cloud Console!`);
-          setTasks([]);
+          if (listsData.error.code === 401) {
+            refreshGoogleToken();
+            const savedTasks = localStorage.getItem('tracker_tasks');
+            if (savedTasks) {
+              setTasks(JSON.parse(savedTasks));
+            } else {
+              setTasks(defaultTasks);
+            }
+            return;
+          } else {
+            alert(`Google Tasks Error: ${listsData.error.message}\n\nMake sure the "Google Tasks API" is enabled in your Google Cloud Console!`);
+            setTasks([]);
+          }
           return;
         }
 

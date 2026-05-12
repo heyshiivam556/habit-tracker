@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Circle, Calendar, Settings, Trash2 } from 'lucide-react';
+import { Check, Plus, Circle, Calendar, Settings, Trash2, X } from 'lucide-react';
 import { useHabits } from '../hooks/useHabits';
 import { useTasks } from '../hooks/useTasks';
 import { useCalendar } from '../hooks/useCalendar';
@@ -22,6 +22,28 @@ export default function Dashboard() {
 
   const firstEventDate = events.length > 0 ? events[0].start.toDateString() : null;
   const displayEvents = events.filter(e => e.start.toDateString() === firstEventDate);
+
+  const [timeModalHabit, setTimeModalHabit] = useState(null);
+  const [selectedHour, setSelectedHour] = useState(0);
+  const [selectedMinute, setSelectedMinute] = useState(0);
+
+  const handleHabitClick = (habit) => {
+    if (!habit.isCompleted && habit.requiresTime) {
+      setTimeModalHabit(habit);
+      setSelectedHour(0);
+      setSelectedMinute(15); // default to 15 mins
+    } else {
+      toggleHabit(habit.id);
+    }
+  };
+
+  const handleTimeConfirm = () => {
+    if (timeModalHabit) {
+      const timeInMinutes = (selectedHour * 60) + selectedMinute;
+      toggleHabit(timeModalHabit.id, timeInMinutes);
+      setTimeModalHabit(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 pb-12">
@@ -50,7 +72,7 @@ export default function Dashboard() {
                 <motion.div
                   key={habit.id}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => toggleHabit(habit.id)}
+                  onClick={() => handleHabitClick(habit)}
                   className={`relative cursor-pointer rounded-[2rem] p-3 sm:p-4 flex flex-col items-center justify-center aspect-square transition-all duration-300 shadow-sm border-2 ${
                     habit.isCompleted 
                       ? 'border-transparent scale-95' 
@@ -196,6 +218,97 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* Time Input Modal */}
+      <AnimatePresence>
+        {timeModalHabit && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[var(--bg-surface)] p-6 rounded-[2.5rem] w-full max-w-sm shadow-xl relative border border-[var(--text-muted)]/10 flex flex-col items-center"
+            >
+              <button 
+                onClick={() => setTimeModalHabit(null)}
+                className="absolute top-5 right-5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors bg-[var(--bg-main)] p-2 rounded-full"
+              >
+                <X size={20} />
+              </button>
+
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-4 text-[#1e1e24] shadow-sm mt-2"
+                style={{ backgroundColor: timeModalHabit.color }}
+              >
+                {timeModalHabit.icon && <timeModalHabit.icon size={32} />}
+              </div>
+              <h3 className="text-xl font-bold mb-1 text-center">{timeModalHabit.name}</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-8 text-center">Log your time for this habit</p>
+
+              <div className="flex gap-6 mb-8 w-full justify-center">
+                {/* Hour Wheel */}
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-[var(--text-muted)] font-medium uppercase mb-2">Hours</span>
+                  <div 
+                    className="h-32 w-20 overflow-y-auto no-scrollbar snap-y snap-mandatory border border-[var(--text-muted)]/20 rounded-3xl bg-[var(--bg-main)]"
+                    style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)' }}
+                  >
+                    <div className="h-11"></div>
+                    {Array.from({length: 24}).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="h-10 flex items-center justify-center text-2xl font-bold snap-center cursor-pointer transition-colors"
+                        style={{ color: selectedHour === i ? 'var(--text-main)' : 'var(--text-muted)' }}
+                        onClick={() => setSelectedHour(i)}
+                      >
+                        {i.toString().padStart(2, '0')}
+                      </div>
+                    ))}
+                    <div className="h-11"></div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-center text-3xl font-bold text-[var(--text-muted)] pb-2">:</div>
+
+                {/* Minute Wheel */}
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-[var(--text-muted)] font-medium uppercase mb-2">Minutes</span>
+                  <div 
+                    className="h-32 w-20 overflow-y-auto no-scrollbar snap-y snap-mandatory border border-[var(--text-muted)]/20 rounded-3xl bg-[var(--bg-main)]"
+                    style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)' }}
+                  >
+                    <div className="h-11"></div>
+                    {Array.from({length: 60}).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="h-10 flex items-center justify-center text-2xl font-bold snap-center cursor-pointer transition-colors"
+                        style={{ color: selectedMinute === i ? 'var(--text-main)' : 'var(--text-muted)' }}
+                        onClick={() => setSelectedMinute(i)}
+                      >
+                        {i.toString().padStart(2, '0')}
+                      </div>
+                    ))}
+                    <div className="h-11"></div>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleTimeConfirm}
+                className="w-full py-4 rounded-3xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors shadow-sm flex items-center justify-center gap-2 text-lg"
+              >
+                <Check size={24} strokeWidth={3} />
+                Complete Habit
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 export function useCalendar() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { googleToken } = useAuth();
+  const { googleToken, clearGoogleToken, refreshGoogleToken } = useAuth();
 
   useEffect(() => {
     if (!googleToken) {
@@ -28,7 +28,11 @@ export function useCalendar() {
         
         if (data.error) {
           console.error("Google Calendar API Error:", data.error);
-          alert(`Google Calendar Error: ${data.error.message}\n\nMake sure the "Google Calendar API" is enabled in your Google Cloud Console!`);
+          if (data.error.code === 401) {
+            refreshGoogleToken();
+          } else {
+            alert(`Google Calendar Error: ${data.error.message}\n\nMake sure the "Google Calendar API" is enabled in your Google Cloud Console!`);
+          }
           setEvents([]);
           return;
         }

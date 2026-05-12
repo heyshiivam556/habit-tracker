@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, GoogleAuthProvider } from 'firebase/auth';
 
+let globalTokenClient = null;
+let scriptLoading = false;
+
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,6 +14,45 @@ export function useAuth() {
     if (!auth) {
       setLoading(false);
       return;
+    }
+
+    const initTokenClient = () => {
+      const client_id = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!client_id) {
+        console.warn("VITE_GOOGLE_CLIENT_ID missing! GIS automatic sync will fail.");
+        return;
+      }
+      globalTokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: client_id,
+        scope: 'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.readonly',
+        callback: (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            setGoogleToken(tokenResponse.access_token);
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            console.log("GIS Silent Refresh successful!");
+          } else if (tokenResponse && tokenResponse.error) {
+            console.warn("GIS Silent Refresh failed:", tokenResponse.error);
+            clearGoogleToken();
+          }
+        },
+      });
+    };
+
+    if (!globalTokenClient && !scriptLoading) {
+      if (window.google?.accounts?.oauth2) {
+        initTokenClient();
+      } else {
+        scriptLoading = true;
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          scriptLoading = false;
+          initTokenClient();
+        };
+        document.body.appendChild(script);
+      }
     }
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -74,5 +116,41 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, loginWithGoogle, logout, googleToken };
+  const clearGoogleToken = () => {
+    setGoogleToken(null);
+    localStorage.removeItem('google_access_token');
+  };
+
+  const refreshGoogleToken = async () => {
+    if (!globalTokenClient) {
+      console.warn("GIS Token Client not loaded.");
+      clearGoogleToken();
+      return;
+    }
+
+    const lastRefresh = sessionStorage.getItem('last_refresh_attempt');
+    if (lastRefresh && Date.now() - parseInt(lastRefresh) < 60000) {
+      console.warn("Token refresh loop detected. Clearing token.");
+      clearGoogleToken();
+      return;
+    }
+    sessionStorage.setItem('last_refresh_attempt', Date.now().toString());
+    
+    try {
+      globalTokenClient.requestAccessToken({ 
+        prompt: 'none', 
+        login_hint: auth?.currentUser?.email 
+      });
+    } catch (error) {
+      console.error("GIS silent refresh trigger failed:", error);
+      clearGoogleToken();
+    }
+  };
+
+  const connectGoogleAPI = () => {
+    if (!globalTokenClient) return alert("Google API not loaded yet. Check VITE_GOOGLE_CLIENT_ID.");
+    globalTokenClient.requestAccessToken({ prompt: '', login_hint: auth?.currentUser?.email });
+  };
+
+  return { user, loading, loginWithGoogle, logout, googleToken, clearGoogleToken, refreshGoogleToken, connectGoogleAPI };
 }

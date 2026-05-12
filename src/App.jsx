@@ -1,13 +1,31 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
-import Dashboard from './components/Dashboard';
+import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
+import { useAuth } from './hooks/useAuth';
 import Profile from './pages/Profile';
 import ManageHabits from './pages/ManageHabits';
 
 function AppLayout() {
   const location = useLocation();
   const path = location.pathname;
+  const { user } = useAuth();
+  
+  const firstName = user?.displayName ? user.displayName.split(' ')[0] : 'Alex';
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const savedAccent = localStorage.getItem('accent') || 'beige';
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    document.documentElement.setAttribute('data-theme', savedAccent);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 pb-24">
@@ -15,7 +33,7 @@ function AppLayout() {
       <main className="max-w-md mx-auto p-4 sm:p-6 lg:max-w-2xl">
         <header className="mb-8 pt-4">
           <h1 className="text-3xl font-bold tracking-tight">
-            {path === '/' && 'Good Morning, Alex'}
+            {path === '/' && `Good Morning, ${firstName}`}
             {path === '/analytics' && 'Analytics'}
             {path === '/profile' && 'You'}
             {path === '/manage-habits' && 'Manage Habits'}

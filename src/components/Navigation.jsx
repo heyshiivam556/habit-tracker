@@ -24,13 +24,14 @@ export default function Navigation() {
                 key={tab.id}
                 to={tab.id}
                 className={`relative flex items-center justify-center w-12 h-10 sm:w-14 sm:h-12 rounded-full transition-colors duration-300 ${
-                  isActive ? 'text-[var(--bg-main)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  isActive ? 'text-[var(--bg-surface)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="active-pill"
-                    className="absolute inset-0 bg-[var(--text-main)] rounded-full"
+                    className="absolute inset-0 rounded-full"
+                    style={{ backgroundColor: 'var(--nav-bubble)' }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   />
                 )}

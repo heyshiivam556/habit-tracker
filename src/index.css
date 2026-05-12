@@ -1,23 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #f2ead0;
-  /* Cozy warm beige background */
-  --color-surface: #ffffff;
-  /* White card surface */
-  --color-dark-primary: #1b1b22;
-  /* Cozy dark background */
-  --color-dark-surface: #282834;
-  /* Dark mode card surface */
-
   --color-accent-soft: #c0d6c9;
-  /* Soft sage */
   --color-accent-peach: #f5984f;
-  /* Soft peach */
   --color-accent-rose: #e88d91;
-  /* Soft rose */
   --color-accent-blue: #8fcafe;
-  /* Soft blue */
 
   --color-text-main: #2b2d42;
   --color-text-muted: #8d99ae;
@@ -28,38 +15,56 @@
 }
 
 @layer base {
+  /* ── Default (Beige, light) ── */
   :root {
-    --bg-main: var(--color-primary);
-    --bg-surface: var(--color-surface);
-    --text-main: var(--color-text-main);
-    --text-muted: var(--color-text-muted);
+    --bg-main:    #f2ead0;
+    --bg-surface: #ffffff;
+    --text-main:  #2b2d42;
+    --text-muted: #8d99ae;
+    --nav-bubble: #2b2d42;  /* dark pill on warm bg */
   }
 
+  /* ── Dark mode overlay (works on top of any theme) ── */
   .dark {
-    --bg-main: var(--color-dark-primary);
-    --bg-surface: var(--color-dark-surface);
-    --text-main: var(--color-dark-text-main);
-    --text-muted: var(--color-dark-text-muted);
+    --bg-main:    #1b1b22;
+    --bg-surface: #282834;
+    --text-main:  #edf2f4;
+    --text-muted: #8d99ae;
+    --nav-bubble: #f5984f;  /* warm peach pill on dark bg */
   }
+
+  /* ─────────────── ACCENT THEMES ─────────────── */
+
+  /* Beige (default) */
+  [data-theme="beige"]       { --bg-main: #f2ead0; --bg-surface: #ffffff;  --nav-bubble: #2b2d42; }
+  [data-theme="beige"].dark  { --bg-main: #1b1b22; --bg-surface: #282834;  --nav-bubble: #f5984f; }
+
+  /* Sage */
+  [data-theme="sage"]        { --bg-main: #dceee5; --bg-surface: #f0f8f3;  --nav-bubble: #2d6a4f; }
+  [data-theme="sage"].dark   { --bg-main: #18231e; --bg-surface: #233029;  --nav-bubble: #6fcf97; }
+
+  /* Lavender */
+  [data-theme="lavender"]       { --bg-main: #ede8f8; --bg-surface: #f8f5ff;  --nav-bubble: #6b5bb5; }
+  [data-theme="lavender"].dark  { --bg-main: #1a1726; --bg-surface: #26223a;  --nav-bubble: #b39ddb; }
+
+  /* Slate */
+  [data-theme="slate"]       { --bg-main: #e4eaf2; --bg-surface: #f4f6fa;  --nav-bubble: #3a5a8a; }
+  [data-theme="slate"].dark  { --bg-main: #171c26; --bg-surface: #202738;  --nav-bubble: #7ab3e0; }
+
+  /* Rose */
+  [data-theme="rose"]        { --bg-main: #fce8ea; --bg-surface: #fff5f6;  --nav-bubble: #c0545a; }
+  [data-theme="rose"].dark   { --bg-main: #261719; --bg-surface: #372325;  --nav-bubble: #f4a7ab; }
 
   body {
     background-color: var(--bg-main);
     color: var(--text-main);
     font-family: var(--font-sans);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.35s ease, color 0.35s ease;
     margin: 0;
     min-height: 100vh;
   }
 }
 
-/* Hide scrollbar for clean UI but keep functionality */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Droplet, Dumbbell, Coffee, Heart, Star, Music, Zap } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useAuth } from './useAuth';
 import { db } from '../firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -12,9 +12,7 @@ const defaultHabits = [
   { id: '4', name: 'Morning Coffee', iconName: 'Coffee', color: 'var(--color-accent-soft)', isCompleted: false, lastCompletedDate: null, completedDates: [], createdAt: 4 },
 ];
 
-const iconMap = {
-  BookOpen, Droplet, Dumbbell, Coffee, Heart, Star, Music, Zap
-};
+// Dynamically use all icons from lucide-react
 
 export function useHabits() {
   const [habits, setHabits] = useState([]);
@@ -91,18 +89,28 @@ export function useHabits() {
     }
   }, [habits, isLoaded, user, loading]);
 
-  const toggleHabit = async (id) => {
+  const toggleHabit = async (id, timeSpentInMinutes = null) => {
     const today = new Date().toDateString();
     const habit = habits.find(h => h.id === id);
     const newlyCompleted = !habit.isCompleted;
 
     let updatedCompletedDates = habit.completedDates || [];
+    let updatedTimeRecords = habit.timeRecords || {};
+
     if (newlyCompleted) {
       if (!updatedCompletedDates.includes(today)) {
         updatedCompletedDates = [...updatedCompletedDates, today];
       }
+      if (timeSpentInMinutes !== null) {
+        updatedTimeRecords = { ...updatedTimeRecords, [today]: timeSpentInMinutes };
+      }
     } else {
       updatedCompletedDates = updatedCompletedDates.filter(date => date !== today);
+      if (updatedTimeRecords[today]) {
+        const newTimeRecords = { ...updatedTimeRecords };
+        delete newTimeRecords[today];
+        updatedTimeRecords = newTimeRecords;
+      }
     }
 
     // Optimistic Update
@@ -112,7 +120,8 @@ export function useHabits() {
           ...h, 
           isCompleted: newlyCompleted,
           lastCompletedDate: newlyCompleted ? today : h.lastCompletedDate,
-          completedDates: updatedCompletedDates
+          completedDates: updatedCompletedDates,
+          timeRecords: updatedTimeRecords
         };
       }
       return h;
@@ -125,7 +134,8 @@ export function useHabits() {
         await updateDoc(habitRef, {
           isCompleted: newlyCompleted,
           lastCompletedDate: newlyCompleted ? today : habit.lastCompletedDate,
-          completedDates: updatedCompletedDates
+          completedDates: updatedCompletedDates,
+          timeRecords: updatedTimeRecords
         });
       } catch (error) {
         console.error("Failed to update habit in Firestore", error);
@@ -141,6 +151,8 @@ export function useHabits() {
       isCompleted: false, 
       lastCompletedDate: null,
       completedDates: [],
+      timeRecords: {},
+      requiresTime: habitData.requiresTime || false,
       createdAt: Date.now() 
     };
 
@@ -176,10 +188,9 @@ export function useHabits() {
     }
   };
 
-  // Map icon strings back to actual Lucide components for rendering
   const mappedHabits = habits.map(h => ({
     ...h,
-    icon: iconMap[h.iconName] || BookOpen
+    icon: Icons[h.iconName] || Icons.BookOpen
   }));
 
   return { habits: mappedHabits, toggleHabit, addHabit, deleteHabit };

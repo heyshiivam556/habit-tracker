@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useHabits } from '../hooks/useHabits';
 import { ChevronLeft, ChevronRight, Activity, TrendingUp, Flame } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { motion } from 'framer-motion';
 
 export default function Analytics() {
   const { habits } = useHabits();
@@ -29,7 +30,7 @@ export default function Analytics() {
     setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
   };
 
-  const { chartData, monthlyScore, currentStreak, totalCompletions } = useMemo(() => {
+  const { chartData, monthlyScore, currentStreak, totalCompletions, habitProgressData } = useMemo(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const data = [];
     let monthCompletions = 0;
@@ -115,13 +116,75 @@ export default function Analytics() {
 
     const mScore = totalPossible > 0 ? Math.round((monthCompletions / totalPossible) * 100) : 0;
 
+    const habitProgressData = habits.map(h => {
+      let compCount = 0;
+      for (let day = 1; day <= daysToCount; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+        if (allCompletedDatesSet.has(`${h.id}-${date.toDateString()}`)) {
+          compCount++;
+        }
+      }
+      return {
+        ...h,
+        percentage: daysToCount > 0 ? Math.round((compCount / daysToCount) * 100) : 0
+      };
+    });
+
     return {
       chartData: data,
       monthlyScore: mScore,
       currentStreak: currentStreakCalc,
-      totalCompletions: allCompletedDatesSet.size // total over all time based on what's available
+      totalCompletions: allCompletedDatesSet.size,
+      habitProgressData
     };
   }, [currentMonth, currentYear, habits]);
+
+  const timeHabits = useMemo(() => {
+    return habits.filter(h => h.requiresTime && Object.keys(h.timeRecords || {}).length > 0);
+  }, [habits]);
+
+  const [selectedTimeHabitIndex, setSelectedTimeHabitIndex] = useState(0);
+
+  useEffect(() => {
+    if (timeHabits.length > 0 && selectedTimeHabitIndex >= timeHabits.length) {
+      setSelectedTimeHabitIndex(0);
+    }
+  }, [timeHabits, selectedTimeHabitIndex]);
+
+  const selectedTimeHabit = timeHabits[selectedTimeHabitIndex] || null;
+
+  const handlePrevTimeHabit = () => {
+    setSelectedTimeHabitIndex(prev => prev > 0 ? prev - 1 : timeHabits.length - 1);
+  };
+
+  const handleNextTimeHabit = () => {
+    setSelectedTimeHabitIndex(prev => prev < timeHabits.length - 1 ? prev + 1 : 0);
+  };
+
+  const timeHabitChartData = useMemo(() => {
+    if (!selectedTimeHabit) return [];
+    
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const data = [];
+    const now = new Date();
+    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentYear, currentMonth, day);
+      const dateString = date.toDateString();
+      const timeSpent = selectedTimeHabit.timeRecords?.[dateString] || 0;
+      
+      const isFuture = isCurrentMonth && day > now.getDate();
+      
+      data.push({
+        day,
+        date: dateString,
+        minutes: isFuture ? null : timeSpent,
+        displayDate: `${day} ${monthNames[currentMonth].substring(0, 3)}`
+      });
+    }
+    return data;
+  }, [selectedTimeHabit, currentYear, currentMonth]);
 
   const now = new Date();
   const isNextDisabled = currentYear === now.getFullYear() && currentMonth === now.getMonth();
@@ -133,6 +196,25 @@ export default function Analytics() {
         <div className="bg-[var(--bg-surface)] p-3 rounded-xl shadow-lg border border-[var(--text-muted)]/10 text-sm">
           <p className="font-semibold text-[var(--text-main)] mb-1">{payload[0].payload.displayDate}</p>
           <p className="text-[var(--color-accent-rose)] font-medium">Score: {payload[0].value}%</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomTimeTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length && payload[0].value !== null) {
+      const mins = payload[0].value;
+      const hours = Math.floor(mins / 60);
+      const remainingMins = mins % 60;
+      const timeStr = hours > 0 ? `${hours}h ${remainingMins}m` : `${remainingMins}m`;
+
+      return (
+        <div className="bg-[var(--bg-surface)] p-3 rounded-xl shadow-lg border border-[var(--text-muted)]/10 text-sm">
+          <p className="font-semibold text-[var(--text-main)] mb-1">{payload[0].payload.displayDate}</p>
+          <p className="font-medium" style={{ color: selectedTimeHabit?.color || 'var(--color-accent-blue)' }}>
+            Time: {timeStr}
+          </p>
         </div>
       );
     }
@@ -260,6 +342,136 @@ export default function Analytics() {
           )}
         </div>
       </section>
+
+      {/* Visual Representation Section */}
+      <section className="bg-[var(--bg-surface)] rounded-3xl p-5 shadow-sm border border-[var(--text-muted)]/10">
+        <h2 className="text-xl font-semibold mb-6 text-[var(--color-accent-rose)]">Visual Representation</h2>
+        
+        {showChart ? (
+          <div className="flex flex-col gap-4">
+            {habitProgressData.map((habit, index) => {
+              const Icon = habit.icon;
+              return (
+                <div key={habit.id} className="flex items-center gap-3">
+                  <div className="relative group">
+                    <div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm z-10 relative transition-transform group-hover:scale-105"
+                      style={{ backgroundColor: habit.color, color: '#1e1e24' }}
+                    >
+                      {Icon && <Icon size={24} />}
+                    </div>
+                    {/* Tooltip */}
+                    <div className="absolute left-1/2 -top-10 -translate-x-1/2 bg-[#1e1e24] text-white dark:bg-white dark:text-[#1e1e24] text-xs font-semibold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20 shadow-md">
+                      {habit.name}
+                      {/* Triangle pointer */}
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1e1e24] dark:border-t-white"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 bg-[var(--bg-main)] h-5 rounded-full overflow-hidden relative shadow-inner border border-[var(--text-muted)]/5">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${habit.percentage}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.1 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: habit.color }}
+                    />
+                  </div>
+                  <div className="w-12 text-right text-sm font-bold text-[var(--text-muted)]">
+                    {habit.percentage}%
+                  </div>
+                </div>
+              );
+            })}
+            {habitProgressData.length === 0 && (
+              <p className="text-sm text-[var(--text-muted)] text-center py-4">No habits to show.</p>
+            )}
+          </div>
+        ) : (
+          <div className="w-full flex flex-col gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center gap-3 animate-pulse">
+                <div className="w-12 h-12 rounded-2xl bg-[var(--bg-main)]"></div>
+                <div className="flex-1 bg-[var(--bg-main)] h-5 rounded-full"></div>
+                <div className="w-12 h-5 bg-[var(--bg-main)] rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Time Spent Section */}
+      {timeHabits.length > 0 && (
+        <section className="bg-[var(--bg-surface)] rounded-3xl p-5 shadow-sm border border-[var(--text-muted)]/10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-[var(--color-accent-rose)]">Time Spent</h2>
+            
+            <div className="flex items-center gap-3 bg-[var(--bg-main)] rounded-full p-1 border border-[var(--text-muted)]/5">
+              <button 
+                onClick={handlePrevTimeHabit}
+                className="p-1.5 hover:bg-[var(--text-muted)]/10 rounded-full transition-colors text-[var(--text-main)]"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              <div className="flex items-center gap-2 px-2 min-w-[100px] justify-center">
+                {selectedTimeHabit && selectedTimeHabit.icon && React.createElement(selectedTimeHabit.icon, { size: 16, style: { color: selectedTimeHabit.color } })}
+                <span className="text-sm font-medium truncate max-w-[80px]">{selectedTimeHabit?.name}</span>
+              </div>
+
+              <button 
+                onClick={handleNextTimeHabit}
+                className="p-1.5 hover:bg-[var(--text-muted)]/10 rounded-full transition-colors text-[var(--text-main)]"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="h-64 w-[calc(100%+1rem)] -ml-4">
+            {showChart && selectedTimeHabit ? (
+              <ResponsiveContainer width="99%" height="100%">
+                <BarChart data={timeHabitChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--text-muted)" opacity={0.1} />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      if (value === 1 || value % 7 === 0 || value === timeHabitChartData.length) return value;
+                      return '';
+                    }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      if (value === 0) return '0';
+                      return value >= 60 ? `${Math.floor(value/60)}h` : `${value}m`;
+                    }}
+                  />
+                  <Tooltip content={<CustomTimeTooltip />} cursor={{ fill: 'var(--text-muted)', opacity: 0.1 }} />
+                  <Bar 
+                    dataKey="minutes" 
+                    radius={[4, 4, 0, 0]}
+                    animationDuration={800}
+                  >
+                    {timeHabitChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={selectedTimeHabit.color || 'var(--color-accent-blue)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] animate-pulse">
+                Loading graph...
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
