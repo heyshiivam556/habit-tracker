@@ -1,2 +1,2 @@
 # Visit habit tracker site from here
-tracker.heyshiivam.me
+https://tracker.heyshiivam.me
