@@ -89,37 +89,39 @@ export function useHabits() {
     }
   }, [habits, isLoaded, user, loading]);
 
-  const toggleHabit = async (id, timeSpentInMinutes = null) => {
-    const today = new Date().toDateString();
+  const toggleHabit = async (id, timeSpentInMinutes = null, targetDateStr = new Date().toDateString()) => {
     const habit = habits.find(h => h.id === id);
-    const newlyCompleted = !habit.isCompleted;
+    const isCompletedForDate = (habit.completedDates || []).includes(targetDateStr);
+    const newlyCompleted = !isCompletedForDate;
 
     let updatedCompletedDates = habit.completedDates || [];
     let updatedTimeRecords = habit.timeRecords || {};
 
     if (newlyCompleted) {
-      if (!updatedCompletedDates.includes(today)) {
-        updatedCompletedDates = [...updatedCompletedDates, today];
+      if (!updatedCompletedDates.includes(targetDateStr)) {
+        updatedCompletedDates = [...updatedCompletedDates, targetDateStr];
       }
       if (timeSpentInMinutes !== null) {
-        updatedTimeRecords = { ...updatedTimeRecords, [today]: timeSpentInMinutes };
+        updatedTimeRecords = { ...updatedTimeRecords, [targetDateStr]: timeSpentInMinutes };
       }
     } else {
-      updatedCompletedDates = updatedCompletedDates.filter(date => date !== today);
-      if (updatedTimeRecords[today]) {
+      updatedCompletedDates = updatedCompletedDates.filter(date => date !== targetDateStr);
+      if (updatedTimeRecords[targetDateStr]) {
         const newTimeRecords = { ...updatedTimeRecords };
-        delete newTimeRecords[today];
+        delete newTimeRecords[targetDateStr];
         updatedTimeRecords = newTimeRecords;
       }
     }
+
+    const isToday = targetDateStr === new Date().toDateString();
 
     // Optimistic Update
     setHabits(habits.map(h => {
       if (h.id === id) {
         return { 
           ...h, 
-          isCompleted: newlyCompleted,
-          lastCompletedDate: newlyCompleted ? today : h.lastCompletedDate,
+          isCompleted: isToday ? newlyCompleted : h.isCompleted,
+          lastCompletedDate: (isToday && newlyCompleted) ? targetDateStr : h.lastCompletedDate,
           completedDates: updatedCompletedDates,
           timeRecords: updatedTimeRecords
         };
@@ -131,12 +133,15 @@ export function useHabits() {
     if (user && db) {
       const habitRef = doc(db, 'users', user.uid, 'habits', id.toString());
       try {
-        await updateDoc(habitRef, {
-          isCompleted: newlyCompleted,
-          lastCompletedDate: newlyCompleted ? today : habit.lastCompletedDate,
+        const updates = {
           completedDates: updatedCompletedDates,
           timeRecords: updatedTimeRecords
-        });
+        };
+        if (isToday) {
+          updates.isCompleted = newlyCompleted;
+          updates.lastCompletedDate = newlyCompleted ? targetDateStr : habit.lastCompletedDate;
+        }
+        await updateDoc(habitRef, updates);
       } catch (error) {
         console.error("Failed to update habit in Firestore", error);
       }

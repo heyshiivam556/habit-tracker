@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Plus, Circle, Calendar, Settings, Trash2, X } from 'lucide-react';
 import { useHabits } from '../hooks/useHabits';
@@ -27,20 +27,44 @@ export default function Dashboard() {
   const [selectedHour, setSelectedHour] = useState(0);
   const [selectedMinute, setSelectedMinute] = useState(0);
 
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const calendarDates = useMemo(() => {
+    return Array.from({ length: 21 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (13 - i));
+      return d;
+    });
+  }, []);
+  
+  const selectedDateStr = selectedDate.toDateString();
+  const calendarRef = useRef(null);
+
+  useEffect(() => {
+    if (calendarRef.current) {
+      const todayElement = calendarRef.current.querySelector('[data-today="true"]');
+      if (todayElement) {
+        const offset = todayElement.offsetLeft + todayElement.offsetWidth - calendarRef.current.clientWidth + 16;
+        calendarRef.current.scrollLeft = offset > 0 ? offset : 0;
+      }
+    }
+  }, [calendarDates]);
+
   const handleHabitClick = (habit) => {
-    if (!habit.isCompleted && habit.requiresTime) {
+    const isCompleted = (habit.completedDates || []).includes(selectedDateStr);
+    if (!isCompleted && habit.requiresTime) {
       setTimeModalHabit(habit);
       setSelectedHour(0);
-      setSelectedMinute(15); // default to 15 mins
+      setSelectedMinute(0); // Fixed default to 0
     } else {
-      toggleHabit(habit.id);
+      toggleHabit(habit.id, null, selectedDateStr);
     }
   };
 
   const handleTimeConfirm = () => {
     if (timeModalHabit) {
       const timeInMinutes = (selectedHour * 60) + selectedMinute;
-      toggleHabit(timeModalHabit.id, timeInMinutes);
+      toggleHabit(timeModalHabit.id, timeInMinutes, selectedDateStr);
       setTimeModalHabit(null);
     }
   };
@@ -56,6 +80,42 @@ export default function Dashboard() {
             <span>Manage</span>
           </Link>
         </div>
+
+        {/* Horizontal Calendar Bar */}
+        <div 
+          ref={calendarRef}
+          className="flex overflow-x-auto no-scrollbar gap-2 mb-6 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+        >
+          {calendarDates.map((date, i) => {
+            const isSelected = date.toDateString() === selectedDateStr;
+            const isToday = date.toDateString() === new Date().toDateString();
+            
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+            const thisDate = new Date(date);
+            thisDate.setHours(0, 0, 0, 0);
+            const isFutureDate = thisDate > todayDate;
+
+            return (
+              <button
+                key={i}
+                data-today={isToday}
+                disabled={isFutureDate}
+                onClick={() => setSelectedDate(date)}
+                className={`flex flex-col items-center justify-center min-w-[3rem] p-2 rounded-2xl transition-all relative shrink-0 ${
+                  isFutureDate ? 'opacity-40 cursor-not-allowed bg-[var(--bg-surface)] text-[var(--text-muted)]' :
+                  isSelected ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
+                }`}
+              >
+                <span className="text-[10px] uppercase font-semibold mb-1">{date.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                <span className={`text-sm font-bold ${isFutureDate ? 'text-[var(--text-muted)]' : isSelected ? '' : 'text-[var(--text-main)]'}`}>{date.getDate()}</span>
+                {isToday && (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-[var(--bg-main)]' : 'bg-[var(--color-accent-rose)]'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
         
         {habits.length === 0 ? (
           <div className="bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--text-muted)]/10 text-center">
@@ -68,29 +128,30 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {habits.map((habit) => {
               const Icon = habit.icon;
+              const isCompleted = (habit.completedDates || []).includes(selectedDateStr);
               return (
                 <motion.div
                   key={habit.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleHabitClick(habit)}
                   className={`relative cursor-pointer rounded-[2rem] p-3 sm:p-4 flex flex-col items-center justify-center aspect-square transition-all duration-300 shadow-sm border-2 ${
-                    habit.isCompleted 
+                    isCompleted 
                       ? 'border-transparent scale-95' 
                       : 'border-transparent hover:shadow-md'
                   }`}
                   style={{ 
                     backgroundColor: habit.color,
-                    opacity: habit.isCompleted ? 0.7 : 1,
+                    opacity: isCompleted ? 0.7 : 1,
                     color: '#1e1e24'
                   }}
                 >
                   {/* Completed Checkmark top right */}
                   <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
                     <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-colors shadow-sm ${
-                        habit.isCompleted ? 'bg-green-500 text-white' : 'border-2 border-[var(--text-main)]/10'
+                        isCompleted ? 'bg-green-500 text-white' : 'border-2 border-[var(--text-main)]/10'
                     }`}>
                       <AnimatePresence>
-                        {habit.isCompleted && (
+                        {isCompleted && (
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -255,6 +316,10 @@ export default function Dashboard() {
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-[var(--text-muted)] font-medium uppercase mb-2">Hours</span>
                   <div 
+                    onScroll={(e) => {
+                      const idx = Math.round(e.target.scrollTop / 40);
+                      if (idx >= 0 && idx < 24) setSelectedHour(idx);
+                    }}
                     className="h-32 w-20 overflow-y-auto no-scrollbar snap-y snap-mandatory border border-[var(--text-muted)]/20 rounded-3xl bg-[var(--bg-main)]"
                     style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)' }}
                   >
@@ -264,7 +329,10 @@ export default function Dashboard() {
                         key={i} 
                         className="h-10 flex items-center justify-center text-2xl font-bold snap-center cursor-pointer transition-colors"
                         style={{ color: selectedHour === i ? 'var(--text-main)' : 'var(--text-muted)' }}
-                        onClick={() => setSelectedHour(i)}
+                        onClick={(e) => {
+                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          setSelectedHour(i);
+                        }}
                       >
                         {i.toString().padStart(2, '0')}
                       </div>
@@ -279,6 +347,10 @@ export default function Dashboard() {
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-[var(--text-muted)] font-medium uppercase mb-2">Minutes</span>
                   <div 
+                    onScroll={(e) => {
+                      const idx = Math.round(e.target.scrollTop / 40);
+                      if (idx >= 0 && idx < 60) setSelectedMinute(idx);
+                    }}
                     className="h-32 w-20 overflow-y-auto no-scrollbar snap-y snap-mandatory border border-[var(--text-muted)]/20 rounded-3xl bg-[var(--bg-main)]"
                     style={{ WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)' }}
                   >
@@ -288,7 +360,10 @@ export default function Dashboard() {
                         key={i} 
                         className="h-10 flex items-center justify-center text-2xl font-bold snap-center cursor-pointer transition-colors"
                         style={{ color: selectedMinute === i ? 'var(--text-main)' : 'var(--text-muted)' }}
-                        onClick={() => setSelectedMinute(i)}
+                        onClick={(e) => {
+                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          setSelectedMinute(i);
+                        }}
                       >
                         {i.toString().padStart(2, '0')}
                       </div>
