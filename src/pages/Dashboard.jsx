@@ -134,12 +134,13 @@ export default function Dashboard() {
                   key={habit.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleHabitClick(habit)}
-                  className={`relative cursor-pointer rounded-[2rem] p-3 sm:p-4 flex flex-col items-center justify-center aspect-square transition-all duration-300 shadow-sm border-2 ${
+                  className={`habit-tile relative cursor-pointer rounded-[2rem] p-3 sm:p-4 flex flex-col items-center justify-center aspect-square transition-all duration-300 shadow-sm border-2 ${
                     isCompleted 
                       ? 'border-transparent scale-95' 
                       : 'border-transparent hover:shadow-md'
                   }`}
                   style={{ 
+                    '--habit-color': habit.color,
                     backgroundColor: habit.color,
                     opacity: isCompleted ? 0.7 : 1,
                     color: '#1e1e24'

@@ -24,7 +24,7 @@ export function useAuth() {
       }
       globalTokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: client_id,
-        scope: 'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.readonly',
+        scope: 'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
         callback: (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             setGoogleToken(tokenResponse.access_token);
@@ -149,7 +149,7 @@ export function useAuth() {
 
   const connectGoogleAPI = () => {
     if (!globalTokenClient) return alert("Google API not loaded yet. Check VITE_GOOGLE_CLIENT_ID.");
-    globalTokenClient.requestAccessToken({ prompt: '', login_hint: auth?.currentUser?.email });
+    globalTokenClient.requestAccessToken({ prompt: 'consent', login_hint: auth?.currentUser?.email });
   };
 
   return { user, loading, loginWithGoogle, logout, googleToken, clearGoogleToken, refreshGoogleToken, connectGoogleAPI };

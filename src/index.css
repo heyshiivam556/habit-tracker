@@ -36,24 +36,24 @@
   /* ─────────────── ACCENT THEMES ─────────────── */
 
   /* Beige (default) */
-  [data-theme="beige"]       { --bg-main: #f2ead0; --bg-surface: #ffffff;  --nav-bubble: #2b2d42; }
-  [data-theme="beige"].dark  { --bg-main: #1b1b22; --bg-surface: #282834;  --nav-bubble: #f5984f; }
+  [data-theme="beige"]       { --bg-main: #f2ead0; --bg-surface: #ffffff;  --nav-bubble: #2b2d42; --glass-gradient: linear-gradient(135deg, #f2ead0, #fce8ea, #e4eaf2); }
+  [data-theme="beige"].dark  { --bg-main: #1b1b22; --bg-surface: #282834;  --nav-bubble: #f5984f; --glass-gradient: linear-gradient(135deg, #1b1b22, #2b2d42, #171c26); }
 
   /* Sage */
-  [data-theme="sage"]        { --bg-main: #dceee5; --bg-surface: #f0f8f3;  --nav-bubble: #2d6a4f; }
-  [data-theme="sage"].dark   { --bg-main: #18231e; --bg-surface: #233029;  --nav-bubble: #6fcf97; }
+  [data-theme="sage"]        { --bg-main: #dceee5; --bg-surface: #f0f8f3;  --nav-bubble: #2d6a4f; --glass-gradient: linear-gradient(135deg, #dceee5, #e4f2e7, #c0d6c9); }
+  [data-theme="sage"].dark   { --bg-main: #18231e; --bg-surface: #233029;  --nav-bubble: #6fcf97; --glass-gradient: linear-gradient(135deg, #18231e, #1a2f26, #111a15); }
 
   /* Lavender */
-  [data-theme="lavender"]       { --bg-main: #ede8f8; --bg-surface: #f8f5ff;  --nav-bubble: #6b5bb5; }
-  [data-theme="lavender"].dark  { --bg-main: #1a1726; --bg-surface: #26223a;  --nav-bubble: #b39ddb; }
+  [data-theme="lavender"]       { --bg-main: #ede8f8; --bg-surface: #f8f5ff;  --nav-bubble: #6b5bb5; --glass-gradient: linear-gradient(135deg, #ede8f8, #e0d4f5, #fce8ea); }
+  [data-theme="lavender"].dark  { --bg-main: #1a1726; --bg-surface: #26223a;  --nav-bubble: #b39ddb; --glass-gradient: linear-gradient(135deg, #1a1726, #2d1b2e, #171c26); }
 
   /* Slate */
-  [data-theme="slate"]       { --bg-main: #e4eaf2; --bg-surface: #f4f6fa;  --nav-bubble: #3a5a8a; }
-  [data-theme="slate"].dark  { --bg-main: #171c26; --bg-surface: #202738;  --nav-bubble: #7ab3e0; }
+  [data-theme="slate"]       { --bg-main: #e4eaf2; --bg-surface: #f4f6fa;  --nav-bubble: #3a5a8a; --glass-gradient: linear-gradient(135deg, #e4eaf2, #d5e1f0, #dceee5); }
+  [data-theme="slate"].dark  { --bg-main: #171c26; --bg-surface: #202738;  --nav-bubble: #7ab3e0; --glass-gradient: linear-gradient(135deg, #171c26, #1c2e4a, #1b1b22); }
 
   /* Rose */
-  [data-theme="rose"]        { --bg-main: #fce8ea; --bg-surface: #fff5f6;  --nav-bubble: #c0545a; }
-  [data-theme="rose"].dark   { --bg-main: #261719; --bg-surface: #372325;  --nav-bubble: #f4a7ab; }
+  [data-theme="rose"]        { --bg-main: #fce8ea; --bg-surface: #fff5f6;  --nav-bubble: #c0545a; --glass-gradient: linear-gradient(135deg, #fce8ea, #fadadd, #f2ead0); }
+  [data-theme="rose"].dark   { --bg-main: #261719; --bg-surface: #372325;  --nav-bubble: #f4a7ab; --glass-gradient: linear-gradient(135deg, #261719, #3a1c20, #1b1b22); }
 
   body {
     background-color: var(--bg-main);
@@ -62,6 +62,45 @@
     transition: background-color 0.35s ease, color 0.35s ease;
     margin: 0;
     min-height: 100vh;
+  }
+  /* ─────────────── GLASSMORPHISM ─────────────── */
+
+  .glass {
+    --bg-surface: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+  }
+
+  .glass.dark {
+    --bg-surface: rgba(30, 30, 35, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.08);
+  }
+
+  .glass .bg-\[var\(--bg-surface\)\] {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  /* Animated Gradient Background */
+  .glass body {
+    background: var(--glass-bg-image, var(--glass-gradient));
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+  }
+
+  .glass .min-h-screen {
+    background-color: transparent !important;
+  }
+
+  /* Habit Tiles Glass Effect */
+  .glass .habit-tile {
+    background-color: color-mix(in srgb, var(--habit-color) 40%, transparent) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid color-mix(in srgb, var(--habit-color) 50%, transparent) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   }
 }
 
