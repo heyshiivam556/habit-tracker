@@ -75,7 +75,7 @@
     --glass-border: rgba(255, 255, 255, 0.08);
   }
 
-  .glass .bg-\[var\(--bg-surface\)\] {
+  .glass [class~="bg-[var(--bg-surface)]"] {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border) !important;
