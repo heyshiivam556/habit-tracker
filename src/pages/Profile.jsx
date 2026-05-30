@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Settings, Moon, Sun, Download, LogIn, LogOut, Check, Loader, Sparkles, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
+import { Settings, Moon, Sun, Download, LogIn, LogOut, Check, Loader, Sparkles, ChevronDown, ChevronUp, Image as ImageIcon, Plus, X, Upload } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useHabits } from '../hooks/useHabits';
 import { syncToGoogleSheets } from '../utils/googleSheets';
@@ -34,12 +35,49 @@ export default function Profile() {
   const [isGlass, setIsGlass] = useState(() =>
     document.documentElement.classList.contains('glass') || localStorage.getItem('glass') === 'true'
   );
-  
+
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const [activeBackground, setActiveBackground] = useState(() => 
+  const [activeBackground, setActiveBackground] = useState(() =>
     localStorage.getItem('glass-bg') || ''
   );
+
+  const [customBackgrounds, setCustomBackgrounds] = useState(() => {
+    const saved = localStorage.getItem('custom-glass-bgs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [isAddBgModalOpen, setIsAddBgModalOpen] = useState(false);
+  const [newBgName, setNewBgName] = useState('');
+  const [newBgImage, setNewBgImage] = useState(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewBgImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddCustomBackground = () => {
+    if (newBgName.trim() && newBgImage) {
+      const newBg = {
+        id: `custom-${Date.now()}`,
+        label: newBgName.trim(),
+        url: newBgImage
+      };
+      const updatedList = [...customBackgrounds, newBg];
+      setCustomBackgrounds(updatedList);
+      localStorage.setItem('custom-glass-bgs', JSON.stringify(updatedList));
+      applyBackground(newBgImage);
+      setIsAddBgModalOpen(false);
+      setNewBgName('');
+      setNewBgImage(null);
+    }
+  };
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
@@ -89,7 +127,7 @@ export default function Profile() {
       connectGoogleAPI();
       return;
     }
-    
+
     setIsExporting(true);
     try {
       const spreadsheetId = await syncToGoogleSheets(googleToken, habits);
@@ -158,11 +196,10 @@ export default function Profile() {
                   key={theme.id}
                   title={theme.label}
                   onClick={() => applyAccent(theme.id)}
-                  className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isSelected
+                  className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ${isSelected
                       ? 'scale-110 shadow-md'
                       : 'hover:scale-105 opacity-60 hover:opacity-100 shadow-sm'
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: bubble,
                     border: isSelected
@@ -213,7 +250,7 @@ export default function Profile() {
         )}
 
         {/* Export Data */}
-        <div 
+        <div
           onClick={handleExport}
           className={`p-4 flex items-center justify-between hover:bg-[var(--bg-main)]/50 rounded-b-3xl cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
         >
@@ -226,7 +263,7 @@ export default function Profile() {
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-3xl p-2 shadow-sm border border-[var(--text-muted)]/10 mt-2">
-        <div 
+        <div
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="p-4 flex items-center justify-between hover:bg-[var(--bg-main)]/50 rounded-3xl cursor-pointer transition-colors"
         >
@@ -236,7 +273,7 @@ export default function Profile() {
           </div>
           {showAdvanced ? <ChevronUp size={20} className="text-[var(--text-muted)]" /> : <ChevronDown size={20} className="text-[var(--text-muted)]" />}
         </div>
-        
+
         {showAdvanced && (
           <div className="mt-2 border-t border-[var(--text-muted)]/10">
             {/* Glassmorphism Toggle */}
@@ -261,28 +298,27 @@ export default function Profile() {
                   <p className="text-sm font-medium">Photo Backgrounds</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {BACKGROUNDS.map((bg) => {
+                  {[...BACKGROUNDS, ...customBackgrounds].map((bg) => {
                     const isSelected = activeBackground === bg.url;
                     return (
                       <button
                         key={bg.id}
                         onClick={() => applyBackground(bg.url)}
-                        className={`relative w-full h-16 rounded-2xl overflow-hidden flex items-center justify-between px-4 transition-all ${
-                          isSelected ? 'ring-2 ring-[var(--color-accent-blue)] shadow-md' : 'opacity-80 hover:opacity-100 hover:shadow-sm'
-                        }`}
+                        className={`relative w-full h-16 rounded-2xl overflow-hidden flex items-center justify-between px-4 transition-all ${isSelected ? 'ring-2 ring-[var(--color-accent-blue)] shadow-md' : 'opacity-80 hover:opacity-100 hover:shadow-sm'
+                          }`}
                       >
                         {/* Background Image inside button */}
-                        <div 
+                        <div
                           className="absolute inset-0 z-0 bg-cover bg-center"
                           style={{ backgroundImage: `url(${bg.url})` }}
                         />
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-black/30 z-10" />
-                        
+
                         <span className="relative z-20 text-white font-medium drop-shadow-md">
                           {bg.label}
                         </span>
-                        
+
                         {isSelected && (
                           <div className="relative z-20 w-6 h-6 rounded-full bg-[var(--color-accent-blue)] flex items-center justify-center text-white">
                             <Check size={14} strokeWidth={3} />
@@ -291,22 +327,33 @@ export default function Profile() {
                       </button>
                     );
                   })}
+
+                  {/* Add Custom Background Button */}
+                  <button
+                    onClick={() => setIsAddBgModalOpen(true)}
+                    className="relative w-full h-16 rounded-2xl overflow-hidden flex items-center justify-center px-4 transition-all border border-dashed border-[var(--text-muted)]/50 hover:bg-[var(--bg-main)] hover:border-[var(--text-muted)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      <Plus size={18} />
+                      <span>Add Background</span>
+                    </div>
+                  </button>
+
                   <button
                     onClick={() => applyBackground('')}
-                    className={`relative w-full h-16 rounded-2xl overflow-hidden flex items-center justify-between px-4 transition-all ${
-                      !activeBackground ? 'ring-2 ring-[var(--color-accent-blue)] shadow-md' : 'opacity-80 hover:opacity-100 hover:shadow-sm border border-[var(--text-muted)]/20'
-                    }`}
+                    className={`relative w-full h-16 rounded-2xl overflow-hidden flex items-center justify-between px-4 transition-all ${!activeBackground ? 'ring-2 ring-[var(--color-accent-blue)] shadow-md' : 'opacity-80 hover:opacity-100 hover:shadow-sm border border-[var(--text-muted)]/20'
+                      }`}
                   >
                     {/* Background Gradient inside button */}
-                    <div 
+                    <div
                       className="absolute inset-0 z-0"
                       style={{ background: 'var(--glass-gradient)' }}
                     />
-                    
+
                     <span className="relative z-20 text-[var(--text-main)] font-medium drop-shadow-sm">
                       Theme Gradient
                     </span>
-                    
+
                     {!activeBackground && (
                       <div className="relative z-20 w-6 h-6 rounded-full bg-[var(--color-accent-blue)] flex items-center justify-center text-white">
                         <Check size={14} strokeWidth={3} />
@@ -319,6 +366,77 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Add Custom Background Modal */}
+      <AnimatePresence>
+        {isAddBgModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[var(--bg-surface)] p-6 rounded-[2.5rem] w-full max-w-sm shadow-xl relative border border-[var(--text-muted)]/10 flex flex-col"
+            >
+              <button
+                onClick={() => setIsAddBgModalOpen(false)}
+                className="absolute top-5 right-5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors bg-[var(--bg-main)] p-2 rounded-full"
+              >
+                <X size={20} />
+              </button>
+
+              <h3 className="text-xl font-bold mb-6 mt-2 text-center">Add Background</h3>
+
+              <div className="flex flex-col gap-4 mb-6">
+                <div>
+                  <label className="text-xs font-medium text-[var(--text-muted)] mb-1 block uppercase">Background Name</label>
+                  <input
+                    type="text"
+                    placeholder="E.g. My Awesome Photo"
+                    value={newBgName}
+                    onChange={(e) => setNewBgName(e.target.value)}
+                    className="w-full bg-[var(--bg-main)] rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-[var(--color-accent-blue)] transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-[var(--text-muted)] mb-1 block uppercase">Select Image</label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="w-full h-32 bg-[var(--bg-main)] rounded-xl border-2 border-dashed border-[var(--text-muted)]/30 flex flex-col items-center justify-center overflow-hidden transition-colors hover:border-[var(--color-accent-blue)]">
+                      {newBgImage ? (
+                        <img src={newBgImage} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
+                          <Upload size={24} />
+                          <span className="text-xs font-medium">Click to upload</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleAddCustomBackground}
+                disabled={!newBgName.trim() || !newBgImage}
+                className="w-full py-4 rounded-3xl font-semibold bg-[var(--text-main)] text-[var(--bg-surface)] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Background
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
